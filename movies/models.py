@@ -40,7 +40,7 @@ class MovieReview(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='reviews')
     author = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reviews', null=True)
     text = models.TextField()
-    rating = models.PositiveIntegerField(default=1)
+    # rating = models.PositiveIntegerField(default=1)
     # likes = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -59,6 +59,40 @@ class MoviePlay(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='videos')
 
 
+
+
+
+class Rating(models.Model):
+    """ Рейтинг """
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='rating')
+    rating = models.SmallIntegerField(validators=[
+        MinValueValidator(1),
+        MaxValueValidator(5)
+    ]
+    )
+
+class Like(models.Model):
+    """
+    Модель лайков
+    """
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='like')
+    like = models.BooleanField('ЛАЙК', default=False)
+
+
+class Comment(models.Model):
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='comments')
+    name = models.CharField(max_length=80)
+    email = models.EmailField()
+    body = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ('created',)
+
+    def __str__(self):
+        return 'Comment by {} on {}'.format(self.name, self.movie)
 
 
 

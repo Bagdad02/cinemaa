@@ -11,9 +11,10 @@ from rest_framework.viewsets import ModelViewSet
 from account.permissions import IsActivePermission
 # from liked.mixins import LikedMixin
 from liked.mixins import LikedMixin
-from movies.models import Category, Movie, Favorites, MovieReview, MoviePlay
+from movies.models import Category, Movie, Favorites, MovieReview, MoviePlay, Rating, Like
 from movies.permissions import IsAuthor
-from movies.serializers import CategorySerializer, MovieSerializer, MovieReviewSerializer, MoviePlaySerializer
+from movies.serializers import CategorySerializer, MovieSerializer, MovieReviewSerializer, MoviePlaySerializer, \
+    RatingSerializers
 from movies.service import MovieFilter
 
 
@@ -60,12 +61,36 @@ class MovieViewSet(ModelViewSet, LikedMixin):
         return Response(serializer.data, status=200)
 
     def get_permissions(self):
-        if self.action in ['create', 'add_to_favorites', 'remove_from_favorites']:
+        if self.action in ['create', 'add_to_favorites', 'remove_from_favorites', 'rating']:
             return [IsAuthenticated()]
-        elif self.action in ['update', 'partial_update', 'destroy']:
+        elif self.action in ['update', 'partial_update', 'destroy', 'rating']:
             return [IsAuthor()]
         return []
 
+    @action(methods=['POST'], detail=True)
+    def rating(self, request, pk):  # http://localhost:8000/product/id_product/rating/
+        serializer = RatingSerializers(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            obj = Rating.objects.get(movie=self.get_object())
+            obj.rating = request.data['rating']
+        except Rating.DoesNotExist:
+            obj = Rating(movie=self.get_object(), rating=request.data['rating'])
+        obj.save()
+        return Response(request.data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['POST'], detail=True)
+    def like(self, request, pk):
+        product = self.get_object
+        like_obj, _ = Like.objects.get_or_create(movie=product)
+
+        like_obj.like = not like_obj.like
+        like_obj.save()
+        status = 'liked'
+        if not like_obj.like:
+            status = 'unlike'
+        return Response({'status': status})
 
     @action(['POST'], detail=True)
     def add_to_favorites(self, request, pk=None):
